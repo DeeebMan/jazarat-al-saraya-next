@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { PLACEHOLDER_IMAGE } from '@/lib/constants';
 
@@ -22,8 +22,14 @@ export function ImageWithFallback({
   priority,
   ...props
 }: ImageWithFallbackProps) {
-  const [imgSrc, setImgSrc] = useState(src);
+  const [imgSrc, setImgSrc] = useState(src || PLACEHOLDER_IMAGE);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setImgSrc(src || PLACEHOLDER_IMAGE);
+  }, [src]);
+
+  const isDataUrl = imgSrc.startsWith('data:');
 
   return (
     <>
@@ -37,7 +43,13 @@ export function ImageWithFallback({
         className={className}
         priority={priority}
         sizes={fill ? "(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw" : undefined}
-        onError={() => setImgSrc(PLACEHOLDER_IMAGE)}
+        unoptimized={isDataUrl}
+        onError={() => {
+          if (imgSrc !== PLACEHOLDER_IMAGE) {
+            setImgSrc(PLACEHOLDER_IMAGE);
+          }
+          setIsLoading(false);
+        }}
         onLoad={() => setIsLoading(false)}
         {...props}
       />

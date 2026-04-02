@@ -42,14 +42,14 @@ const CATEGORIES = [
 
 const PRODUCTS = [
   // قطعيات خلصه
-  { name: 'رامب ستيك', price: 480, weight: '1 كيلو', description: 'رامب ستيك فاخر طازج', imageUrl: '/images/رامب-ستيك.png', categoryName: 'قطعيات خلصه', order: 1 },
+  { name: 'رامب ستيك', price: 480, weight: '1 كيلو', description: 'رامب ستيك فاخر طازج', imageUrl: '/images/رامب-ستيك.webp', categoryName: 'قطعيات خلصه', order: 1 },
   { name: 'تي بونز ستيك', price: 440, weight: '1 كيلو', description: 'تي بون ستيك مميز', imageUrl: '/images/T-bone-Steak.webp', categoryName: 'قطعيات خلصه', order: 2 },
-  { name: 'بورتر هاوس', price: 520, weight: '1 كيلو', description: 'بورتر هاوس فاخر', imageUrl: '/images/بورتر-هاوس.png', categoryName: 'قطعيات خلصه', order: 3 },
-  { name: 'اوسو بوكو', price: 440, weight: '1 كيلو', description: 'اوسوبوكو طازج عالي الجودة', imageUrl: '/images/اوسو-بوكو.png', categoryName: 'قطعيات خلصه', order: 4 },
+  { name: 'بورتر هاوس', price: 520, weight: '1 كيلو', description: 'بورتر هاوس فاخر', imageUrl: '/images/بورتر-هاوس.webp', categoryName: 'قطعيات خلصه', order: 3 },
+  { name: 'اوسو بوكو', price: 440, weight: '1 كيلو', description: 'اوسوبوكو طازج عالي الجودة', imageUrl: '/images/اوسو-بوكو.webp', categoryName: 'قطعيات خلصه', order: 4 },
   { name: 'توماهوك ستيك', price: 440, weight: '1 كيلو', description: 'توماهوك ستيك مميز', imageUrl: '/images/توماهوك-ستيك-جديد1.jpg', categoryName: 'قطعيات خلصه', order: 5 },
-  { name: 'سيرلوين ستيك', price: 480, weight: '1 كيلو', description: 'سيرلوين ستيك طازج', imageUrl: '/images/سيرلوين-ستيك.png', categoryName: 'قطعيات خلصه', order: 6 },
+  { name: 'سيرلوين ستيك', price: 480, weight: '1 كيلو', description: 'سيرلوين ستيك طازج', imageUrl: '/images/سيرلوين-ستيك.webp', categoryName: 'قطعيات خلصه', order: 6 },
   { name: 'سترولجانوف / شاورما', price: 520, weight: '1 كيلو', description: 'سترولجانوف أو شاورما فاخرة', imageUrl: '/images/جديد-استراجنوف.jpg', categoryName: 'قطعيات خلصه', order: 7 },
-  { name: 'شورت ريبس', price: 350, weight: '1 كيلو', description: 'شورت ريبس طازج', imageUrl: '/images/شورت-ريب.png', categoryName: 'قطعيات خلصه', order: 8 },
+  { name: 'شورت ريبس', price: 350, weight: '1 كيلو', description: 'شورت ريبس طازج', imageUrl: '/images/شورت-ريب.webp', categoryName: 'قطعيات خلصه', order: 8 },
   // شمبري
   { name: 'انتركوت بالبدن', price: 520, weight: '1 كيلو', description: 'انتركوت بالبدن عالي الجودة', imageUrl: '/images/انتركوت-بالبدن.jpeg', categoryName: 'شمبري', order: 9 },
   { name: 'عرق روستو', price: 520, weight: '1 كيلو', description: 'عرق روستو طازج', imageUrl: '/images/عرق-روستو.jpeg', categoryName: 'شمبري', order: 10 },

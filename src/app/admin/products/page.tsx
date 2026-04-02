@@ -27,6 +27,7 @@ import {
   updateProduct,
   deleteProduct,
 } from '@/lib/firebase/firestore';
+import { uploadProductImage } from '@/lib/firebase/storage';
 import type { Product, Category } from '@/types';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -48,6 +49,7 @@ export default function AdminProductsPage() {
   const [formCategory, setFormCategory] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formImagePreview, setFormImagePreview] = useState('');
+  const [formImageFile, setFormImageFile] = useState<File | null>(null);
 
   // Real-time Firestore listeners
   useEffect(() => {
@@ -88,6 +90,7 @@ export default function AdminProductsPage() {
     setFormCategory('');
     setFormDescription('');
     setFormImagePreview('');
+    setFormImageFile(null);
   };
 
   const openAddModal = () => {
@@ -111,6 +114,7 @@ export default function AdminProductsPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setFormImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => {
         setFormImagePreview(ev.target?.result as string);
@@ -135,13 +139,18 @@ export default function AdminProductsPage() {
 
     setSaving(true);
     try {
+      let imageUrl = editingProduct?.imageUrl || PLACEHOLDER_IMAGE;
+      if (formImageFile) {
+        imageUrl = await uploadProductImage(formImageFile);
+      }
+
       const categoryObj = categories.find((c) => c.name === formCategory);
       const productData = {
         name: formName,
         price: Number(formPrice),
         weight: formWeight,
         description: formDescription,
-        imageUrl: formImagePreview || PLACEHOLDER_IMAGE,
+        imageUrl,
         categoryId: categoryObj?.id || '',
         categoryName: formCategory,
         isActive: true,
@@ -365,7 +374,7 @@ export default function AdminProductsPage() {
             <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-white/10 hover:border-[#d4a574]/30 bg-[#0a0a0a] cursor-pointer transition-colors duration-300">
               {formImagePreview ? (
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden">
-                  <Image src={formImagePreview} alt="معاينة" fill sizes="96px" className="object-cover" />
+                  <Image src={formImagePreview} alt="معاينة" fill sizes="96px" className="object-cover" unoptimized />
                 </div>
               ) : (
                 <IoImageOutline size={32} className="text-[#a0a0b0]" />
