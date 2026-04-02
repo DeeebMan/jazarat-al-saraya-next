@@ -18,7 +18,7 @@ export function buildWhatsAppMessage(
     const itemTotal = item.product.price * item.quantity;
     const totalWeight = item.quantity > 1 ? `${item.quantity} كيلو` : item.product.weight;
     lines.push(`${index + 1}. ${item.product.name} (${totalWeight})`);
-    lines.push(`   السعر: ${item.quantity}*${item.product.price} = *${itemTotal} ${currency}*`);
+    lines.push(`   السعر: ${item.quantity}x${item.product.price} = ${itemTotal} ${currency}`);
     lines.push('');
   });
 
