@@ -30,6 +30,7 @@ export function ImageWithFallback({
   }, [src]);
 
   const isDataUrl = imgSrc.startsWith('data:');
+  const isLocalArabic = imgSrc.startsWith('/images/');
 
   return (
     <>
@@ -43,7 +44,7 @@ export function ImageWithFallback({
         className={className}
         priority={priority}
         sizes={fill ? "(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw" : undefined}
-        unoptimized={isDataUrl}
+        unoptimized={isDataUrl || isLocalArabic}
         onError={() => {
           if (imgSrc !== PLACEHOLDER_IMAGE) {
             setImgSrc(PLACEHOLDER_IMAGE);
