@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   IoAddOutline,
@@ -14,41 +14,48 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
-import { DEFAULT_CATEGORIES, DEFAULT_PRODUCTS } from '@/lib/constants';
-
-interface LocalCategory {
-  id: string;
-  name: string;
-  description: string;
-  order: number;
-  isActive: boolean;
-}
-
-const initialCategories: LocalCategory[] = DEFAULT_CATEGORIES.map((c, i) => ({
-  id: `category-${i + 1}`,
-  name: c.name,
-  description: c.description,
-  order: c.order,
-  isActive: true,
-}));
+import { Spinner } from '@/components/ui/Spinner';
+import {
+  onCategoriesSnapshot,
+  onProductsSnapshot,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+} from '@/lib/firebase/firestore';
+import type { Category, Product } from '@/types';
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] =
-    useState<LocalCategory[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] =
-    useState<LocalCategory | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<LocalCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formOrder, setFormOrder] = useState('');
 
-  // Count products per category (from default data)
+  useEffect(() => {
+    const unsubCats = onCategoriesSnapshot((data) => {
+      setCategories(data);
+      setLoading(false);
+    });
+    const unsubProds = onProductsSnapshot((data) => {
+      setProducts(data);
+    });
+    return () => {
+      unsubCats();
+      unsubProds();
+    };
+  }, []);
+
+  // Count products per category
   const productCountMap: Record<string, number> = {};
-  DEFAULT_PRODUCTS.forEach((p) => {
-    productCountMap[p.category] = (productCountMap[p.category] || 0) + 1;
+  products.forEach((p) => {
+    productCountMap[p.categoryName] = (productCountMap[p.categoryName] || 0) + 1;
   });
 
   const resetForm = () => {
@@ -64,7 +71,7 @@ export default function AdminCategoriesPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (category: LocalCategory) => {
+  const openEditModal = (category: Category) => {
     setEditingCategory(category);
     setFormName(category.name);
     setFormDescription(category.description);
@@ -72,71 +79,70 @@ export default function AdminCategoriesPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) {
       showToast('يرجى إدخال اسم الفئة', 'error');
       return;
     }
 
-    if (editingCategory) {
-      setCategories((prev) =>
-        prev.map((c) =>
-          c.id === editingCategory.id
-            ? {
-                ...c,
-                name: formName,
-                description: formDescription,
-                order: Number(formOrder) || c.order,
-              }
-            : c
-        )
-      );
-      showToast('تم تحديث الفئة بنجاح', 'success');
-    } else {
-      const newCategory: LocalCategory = {
-        id: `category-${Date.now()}`,
+    setSaving(true);
+    try {
+      const slug = formName.replace(/\s+/g, '-').toLowerCase();
+      const data = {
         name: formName,
+        slug,
         description: formDescription,
         order: Number(formOrder) || categories.length + 1,
         isActive: true,
       };
-      setCategories((prev) => [...prev, newCategory]);
-      showToast('تم إضافة الفئة بنجاح', 'success');
-    }
 
-    setIsModalOpen(false);
-    resetForm();
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, data);
+        showToast('تم تحديث الفئة بنجاح', 'success');
+      } else {
+        await addCategory(data);
+        showToast('تم إضافة الفئة بنجاح', 'success');
+      }
+
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      showToast('حدث خطأ أثناء الحفظ', 'error');
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-    showToast('تم حذف الفئة بنجاح', 'success');
+    try {
+      await deleteCategory(deleteTarget.id);
+      showToast('تم حذف الفئة بنجاح', 'success');
+    } catch (error) {
+      showToast('حدث خطأ أثناء الحذف', 'error');
+      console.error(error);
+    }
     setDeleteTarget(null);
   };
 
-  // Sort by order
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Demo data notice */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#d4a574]/10 border border-[#d4a574]/20 rounded-xl px-4 py-3 text-sm text-[#d4a574]"
-      >
-        يتم استخدام بيانات تجريبية - قم بإعداد Firebase لاستخدام البيانات
-        الحقيقية
-      </motion.div>
-
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">إدارة الفئات</h1>
-          <p className="text-[#a0a0b0] text-sm mt-1">
-            تنظيم فئات المنتجات وترتيبها
-          </p>
+          <p className="text-[#a0a0b0] text-sm mt-1">تنظيم فئات المنتجات وترتيبها</p>
         </div>
         <Button onClick={openAddModal}>
           <IoAddOutline size={20} />
@@ -163,10 +169,7 @@ export default function AdminCategoriesPage() {
       {/* Categories Grid */}
       {sortedCategories.length === 0 ? (
         <div className="text-center py-16">
-          <IoListOutline
-            size={48}
-            className="text-[#a0a0b0]/30 mx-auto mb-4"
-          />
+          <IoListOutline size={48} className="text-[#a0a0b0]/30 mx-auto mb-4" />
           <p className="text-[#a0a0b0]">لا توجد فئات بعد</p>
         </div>
       ) : (
@@ -179,32 +182,23 @@ export default function AdminCategoriesPage() {
               transition={{ delay: index * 0.05 }}
               className="bg-[#1a1a2e]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-5 group hover:border-[#d4a574]/30 transition-all duration-300"
             >
-              {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#d4a574]/20 to-[#d4a574]/5 flex items-center justify-center text-[#d4a574] font-bold text-sm border border-[#d4a574]/20">
                     {category.order}
                   </div>
                   <div>
-                    <h3 className="font-bold text-white text-sm">
-                      {category.name}
-                    </h3>
-                    <p className="text-[#a0a0b0] text-xs mt-0.5">
-                      {category.description || 'بدون وصف'}
-                    </p>
+                    <h3 className="font-bold text-white text-sm">{category.name}</h3>
+                    <p className="text-[#a0a0b0] text-xs mt-0.5">{category.description || 'بدون وصف'}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Product count */}
               <div className="flex items-center gap-2 mb-4 bg-[#0a0a0a]/50 rounded-lg px-3 py-2">
                 <IoLayersOutline size={14} className="text-[#a0a0b0]" />
-                <span className="text-xs text-[#a0a0b0]">
-                  {productCountMap[category.name] || 0} منتج
-                </span>
+                <span className="text-xs text-[#a0a0b0]">{productCountMap[category.name] || 0} منتج</span>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2">
                 <button
                   onClick={() => openEditModal(category)}
@@ -233,17 +227,9 @@ export default function AdminCategoriesPage() {
         title={editingCategory ? 'تعديل الفئة' : 'إضافة فئة جديدة'}
       >
         <div className="space-y-4">
-          <Input
-            label="اسم الفئة"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder="مثال: قطعيات فاخرة"
-          />
-
+          <Input label="اسم الفئة" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: قطعيات فاخرة" />
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#a0a0b0]">
-              الوصف
-            </label>
+            <label className="block text-sm font-semibold text-[#a0a0b0]">الوصف</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
@@ -252,26 +238,12 @@ export default function AdminCategoriesPage() {
               className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border-2 border-white/10 text-white placeholder-[#a0a0b0]/50 focus:outline-none focus:border-[#d4a574] transition-colors duration-300 resize-none"
             />
           </div>
-
-          <Input
-            label="الترتيب"
-            type="number"
-            value={formOrder}
-            onChange={(e) => setFormOrder(e.target.value)}
-            placeholder="1"
-            dir="ltr"
-          />
-
-          {/* Actions */}
+          <Input label="الترتيب" type="number" value={formOrder} onChange={(e) => setFormOrder(e.target.value)} placeholder="1" dir="ltr" />
           <div className="flex gap-3 pt-2">
-            <Button onClick={handleSave} className="flex-1">
+            <Button onClick={handleSave} isLoading={saving} className="flex-1">
               {editingCategory ? 'حفظ التعديلات' : 'إضافة الفئة'}
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1"
-            >
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)} className="flex-1">
               إلغاء
             </Button>
           </div>

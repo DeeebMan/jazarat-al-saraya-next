@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
@@ -18,39 +18,27 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 import { formatPrice } from '@/lib/utils/formatPrice';
-import { DEFAULT_PRODUCTS, DEFAULT_CATEGORIES, PLACEHOLDER_IMAGE } from '@/lib/constants';
-
-interface LocalProduct {
-  id: string;
-  name: string;
-  price: number;
-  weight: string;
-  description: string;
-  imageUrl: string;
-  category: string;
-  isActive: boolean;
-}
-
-const initialProducts: LocalProduct[] = DEFAULT_PRODUCTS.map((p, i) => ({
-  id: `product-${i + 1}`,
-  name: p.name,
-  price: p.price,
-  weight: p.weight,
-  description: p.description,
-  imageUrl: p.image,
-  category: p.category,
-  isActive: true,
-}));
-
-const categoryNames = DEFAULT_CATEGORIES.map((c) => c.name);
+import { PLACEHOLDER_IMAGE } from '@/lib/constants';
+import {
+  onProductsSnapshot,
+  onCategoriesSnapshot,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+} from '@/lib/firebase/firestore';
+import type { Product, Category } from '@/types';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<LocalProduct | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<LocalProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -60,6 +48,23 @@ export default function AdminProductsPage() {
   const [formDescription, setFormDescription] = useState('');
   const [formImagePreview, setFormImagePreview] = useState('');
 
+  // Real-time Firestore listeners
+  useEffect(() => {
+    const unsubProducts = onProductsSnapshot((data) => {
+      setProducts(data);
+      setLoading(false);
+    });
+    const unsubCategories = onCategoriesSnapshot((data) => {
+      setCategories(data);
+    });
+    return () => {
+      unsubProducts();
+      unsubCategories();
+    };
+  }, []);
+
+  const categoryNames = categories.map((c) => c.name);
+
   // Filtered products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -67,12 +72,11 @@ export default function AdminProductsPage() {
         !searchQuery ||
         p.name.includes(searchQuery) ||
         p.description.includes(searchQuery);
-      const matchCategory = !categoryFilter || p.category === categoryFilter;
+      const matchCategory = !categoryFilter || p.categoryName === categoryFilter;
       return matchSearch && matchCategory;
     });
   }, [products, searchQuery, categoryFilter]);
 
-  // Stats
   const totalProducts = products.length;
   const activeProducts = products.filter((p) => p.isActive).length;
 
@@ -92,12 +96,12 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (product: LocalProduct) => {
+  const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setFormName(product.name);
     setFormPrice(product.price.toString());
     setFormWeight(product.weight);
-    setFormCategory(product.category);
+    setFormCategory(product.categoryName);
     setFormDescription(product.description);
     setFormImagePreview(product.imageUrl);
     setIsModalOpen(true);
@@ -114,7 +118,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) {
       showToast('يرجى إدخال اسم المنتج', 'error');
       return;
@@ -128,62 +132,61 @@ export default function AdminProductsPage() {
       return;
     }
 
-    if (editingProduct) {
-      // Update
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === editingProduct.id
-            ? {
-                ...p,
-                name: formName,
-                price: Number(formPrice),
-                weight: formWeight,
-                category: formCategory,
-                description: formDescription,
-                imageUrl: formImagePreview || p.imageUrl,
-              }
-            : p
-        )
-      );
-      showToast('تم تحديث المنتج بنجاح', 'success');
-    } else {
-      // Add
-      const newProduct: LocalProduct = {
-        id: `product-${Date.now()}`,
+    setSaving(true);
+    try {
+      const categoryObj = categories.find((c) => c.name === formCategory);
+      const productData = {
         name: formName,
         price: Number(formPrice),
         weight: formWeight,
         description: formDescription,
         imageUrl: formImagePreview || PLACEHOLDER_IMAGE,
-        category: formCategory,
+        categoryId: categoryObj?.id || '',
+        categoryName: formCategory,
         isActive: true,
+        order: editingProduct?.order ?? products.length + 1,
       };
-      setProducts((prev) => [newProduct, ...prev]);
-      showToast('تم إضافة المنتج بنجاح', 'success');
-    }
 
-    setIsModalOpen(false);
-    resetForm();
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, productData);
+        showToast('تم تحديث المنتج بنجاح', 'success');
+      } else {
+        await addProduct(productData);
+        showToast('تم إضافة المنتج بنجاح', 'success');
+      }
+
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      showToast('حدث خطأ أثناء الحفظ', 'error');
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-    showToast('تم حذف المنتج بنجاح', 'success');
+    try {
+      await deleteProduct(deleteTarget.id);
+      showToast('تم حذف المنتج بنجاح', 'success');
+    } catch (error) {
+      showToast('حدث خطأ أثناء الحذف', 'error');
+      console.error(error);
+    }
     setDeleteTarget(null);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Demo data notice */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#d4a574]/10 border border-[#d4a574]/20 rounded-xl px-4 py-3 text-sm text-[#d4a574]"
-      >
-        يتم استخدام بيانات تجريبية - قم بإعداد Firebase لاستخدام البيانات الحقيقية
-      </motion.div>
-
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -255,14 +258,11 @@ export default function AdminProductsPage() {
         >
           <option value="">جميع الفئات</option>
           {categoryNames.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
       </div>
 
-      {/* Products count */}
       <p className="text-[#a0a0b0] text-sm">
         عرض {filteredProducts.length} من {totalProducts} منتج
       </p>
@@ -283,36 +283,27 @@ export default function AdminProductsPage() {
               transition={{ delay: index * 0.03 }}
               className="bg-[#1a1a2e]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden group hover:border-[#d4a574]/30 transition-all duration-300"
             >
-              {/* Image */}
               <div className="relative h-40 bg-[#0a0a0a] overflow-hidden">
                 <Image
                   src={product.imageUrl}
                   alt={product.name}
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                {/* Category badge */}
                 <span className="absolute top-3 right-3 bg-[#d4a574]/90 text-[#0a0a0a] text-[10px] font-bold px-2.5 py-1 rounded-full">
-                  {product.category}
+                  {product.categoryName}
                 </span>
               </div>
 
-              {/* Content */}
               <div className="p-4">
-                <h3 className="font-bold text-white text-sm truncate">
-                  {product.name}
-                </h3>
-                <p className="text-[#a0a0b0] text-xs mt-1 truncate">
-                  {product.description}
-                </p>
+                <h3 className="font-bold text-white text-sm truncate">{product.name}</h3>
+                <p className="text-[#a0a0b0] text-xs mt-1 truncate">{product.description}</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-[#d4a574] font-bold text-sm">
-                    {formatPrice(product.price)}
-                  </span>
+                  <span className="text-[#d4a574] font-bold text-sm">{formatPrice(product.price)}</span>
                   <span className="text-[#a0a0b0] text-xs">{product.weight}</span>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={() => openEditModal(product)}
@@ -342,51 +333,25 @@ export default function AdminProductsPage() {
         title={editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
       >
         <div className="space-y-4">
-          <Input
-            label="اسم المنتج"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder="مثال: ريب آي ستيك"
-          />
-
+          <Input label="اسم المنتج" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: ريب آي ستيك" />
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="السعر (جنيه)"
-              type="number"
-              value={formPrice}
-              onChange={(e) => setFormPrice(e.target.value)}
-              placeholder="0"
-              dir="ltr"
-            />
-            <Input
-              label="الوزن"
-              value={formWeight}
-              onChange={(e) => setFormWeight(e.target.value)}
-              placeholder="1 كيلو"
-            />
+            <Input label="السعر (جنيه)" type="number" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0" dir="ltr" />
+            <Input label="الوزن" value={formWeight} onChange={(e) => setFormWeight(e.target.value)} placeholder="1 كيلو" />
           </div>
-
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#a0a0b0]">
-              الفئة
-            </label>
+            <label className="block text-sm font-semibold text-[#a0a0b0]">الفئة</label>
             <select
               value={formCategory}
               onChange={(e) => setFormCategory(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border-2 border-white/10 text-white focus:outline-none focus:border-[#d4a574] transition-colors duration-300 cursor-pointer"
             >
               {categoryNames.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
           </div>
-
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#a0a0b0]">
-              الوصف
-            </label>
+            <label className="block text-sm font-semibold text-[#a0a0b0]">الوصف</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
@@ -395,47 +360,25 @@ export default function AdminProductsPage() {
               className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border-2 border-white/10 text-white placeholder-[#a0a0b0]/50 focus:outline-none focus:border-[#d4a574] transition-colors duration-300 resize-none"
             />
           </div>
-
-          {/* Image upload */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#a0a0b0]">
-              صورة المنتج
-            </label>
+            <label className="block text-sm font-semibold text-[#a0a0b0]">صورة المنتج</label>
             <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-white/10 hover:border-[#d4a574]/30 bg-[#0a0a0a] cursor-pointer transition-colors duration-300">
               {formImagePreview ? (
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden">
-                  <Image
-                    src={formImagePreview}
-                    alt="معاينة"
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={formImagePreview} alt="معاينة" fill sizes="96px" className="object-cover" />
                 </div>
               ) : (
                 <IoImageOutline size={32} className="text-[#a0a0b0]" />
               )}
-              <span className="text-xs text-[#a0a0b0]">
-                اضغط لاختيار صورة
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
+              <span className="text-xs text-[#a0a0b0]">اضغط لاختيار صورة</span>
+              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
             </label>
           </div>
-
-          {/* Actions */}
           <div className="flex gap-3 pt-2">
-            <Button onClick={handleSave} className="flex-1">
+            <Button onClick={handleSave} isLoading={saving} className="flex-1">
               {editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1"
-            >
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)} className="flex-1">
               إلغاء
             </Button>
           </div>
