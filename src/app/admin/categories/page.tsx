@@ -21,6 +21,7 @@ import {
   addCategory,
   updateCategory,
   deleteCategory,
+  updateProductsCategoryName,
 } from '@/lib/firebase/firestore';
 import type { Category, Product } from '@/types';
 
@@ -97,6 +98,9 @@ export default function AdminCategoriesPage() {
       };
 
       if (editingCategory) {
+        if (editingCategory.name !== formName) {
+          await updateProductsCategoryName(editingCategory.name, formName);
+        }
         await updateCategory(editingCategory.id, data);
         showToast('تم تحديث الفئة بنجاح', 'success');
       } else {

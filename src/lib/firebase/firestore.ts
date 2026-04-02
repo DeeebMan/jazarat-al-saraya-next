@@ -123,6 +123,15 @@ export async function deleteProduct(id: string): Promise<void> {
   await deleteDoc(doc(db, 'products', id));
 }
 
+export async function updateProductsCategoryName(oldName: string, newName: string): Promise<void> {
+  const q = query(collection(db, 'products'), where('categoryName', '==', oldName));
+  const snapshot = await getDocs(q);
+  const updates = snapshot.docs.map((d) =>
+    updateDoc(doc(db, 'products', d.id), { categoryName: newName, updatedAt: serverTimestamp() })
+  );
+  await Promise.all(updates);
+}
+
 // ============ Settings ============
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
