@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import type { Product } from '@/types';
 import { useCartStore } from '@/store/cartStore';
@@ -12,7 +12,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const [mounted, setMounted] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const removeItem = useCartStore((state) => state.removeItem);
@@ -101,4 +101,4 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
     </motion.div>
   );
-}
+});

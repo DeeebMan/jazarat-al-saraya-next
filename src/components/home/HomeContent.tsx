@@ -26,7 +26,6 @@ export function HomeContent() {
     };
 
     const unsubProducts = onProductsSnapshot((data) => {
-      console.log('[HomeContent] Products from Firestore:', data.length, data.slice(0, 3).map(p => `${p.name}: ${p.price}`));
       setProducts(data);
       productsLoaded = true;
       checkReady();
