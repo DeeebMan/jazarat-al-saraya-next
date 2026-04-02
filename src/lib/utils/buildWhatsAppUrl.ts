@@ -17,7 +17,8 @@ export function buildWhatsAppMessage(
   items.forEach((item, index) => {
     const itemTotal = item.product.price * item.quantity;
     lines.push(`${index + 1}. ${item.product.name}`);
-    lines.push(`   ${item.quantity} x ${item.product.weight} = *${itemTotal} ${currency}*`);
+    lines.push(`   ${item.product.weight} x ${item.quantity} = ${item.quantity} ${item.product.weight}`);
+    lines.push(`   ${item.product.price} ${currency} x ${item.quantity} = *${itemTotal} ${currency}*`);
     lines.push('');
   });
 
