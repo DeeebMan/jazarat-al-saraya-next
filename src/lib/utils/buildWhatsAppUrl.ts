@@ -16,9 +16,9 @@ export function buildWhatsAppMessage(
 
   items.forEach((item, index) => {
     const itemTotal = item.product.price * item.quantity;
-    lines.push(`${index + 1}. ${item.product.name}`);
-    lines.push(`   الوزن: ${item.quantity} x ${item.product.weight} = ${item.quantity} ${item.product.weight}`);
-    lines.push(`   السعر: ${item.quantity} x ${item.product.price} ${currency} = *${itemTotal} ${currency}*`);
+    const totalWeight = item.quantity > 1 ? `${item.quantity} كيلو` : item.product.weight;
+    lines.push(`${index + 1}. ${item.product.name} (${totalWeight})`);
+    lines.push(`   السعر: ${item.quantity}*${item.product.price} = *${itemTotal} ${currency}*`);
     lines.push('');
   });
 
