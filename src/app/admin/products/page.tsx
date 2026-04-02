@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { motion } from 'framer-motion';
 import {
   IoAddOutline,
@@ -284,11 +285,10 @@ export default function AdminProductsPage() {
               className="bg-[#1a1a2e]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden group hover:border-[#d4a574]/30 transition-all duration-300"
             >
               <div className="relative h-40 bg-[#0a0a0a] overflow-hidden">
-                <Image
+                <ImageWithFallback
                   src={product.imageUrl}
                   alt={product.name}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span className="absolute top-3 right-3 bg-[#d4a574]/90 text-[#0a0a0a] text-[10px] font-bold px-2.5 py-1 rounded-full">
