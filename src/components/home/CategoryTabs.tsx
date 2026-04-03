@@ -96,7 +96,7 @@ export function CategoryTabs({ categories }: CategoryTabsProps) {
       <div className="max-w-7xl mx-auto px-4">
         <nav
           ref={navRef}
-          className="flex gap-1 overflow-x-auto py-3 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto py-3 scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <style jsx>{`
@@ -110,16 +110,13 @@ export function CategoryTabs({ categories }: CategoryTabsProps) {
               ref={(el) => { tabRefs.current[tab.slug] = el; }}
               onClick={() => handleTabClick(tab.slug)}
               className={cn(
-                'relative whitespace-nowrap px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex-shrink-0',
+                'relative whitespace-nowrap px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex-shrink-0 border',
                 activeTab === tab.slug
-                  ? 'text-[#d4a574]'
-                  : 'text-[#a0a0b0] hover:text-white'
+                  ? 'bg-[#d4a574]/15 text-[#d4a574] border-[#d4a574]/30'
+                  : 'text-[#a0a0b0] hover:text-white hover:bg-white/5 border-transparent'
               )}
             >
               {tab.name}
-              {activeTab === tab.slug && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-0.5 bg-gradient-to-r from-[#d4a574] to-[#e8c49a] rounded-full" />
-              )}
             </button>
           ))}
         </nav>

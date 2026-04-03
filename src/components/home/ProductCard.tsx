@@ -45,16 +45,23 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
     <motion.div
       whileHover={{ y: -5 }}
       className="group rounded-2xl border border-[#d4a574]/10 bg-[#1a1a2e]/60 backdrop-blur-sm
-                 overflow-hidden transition-all duration-300 glow-hover flex flex-col"
+                 overflow-hidden transition-all duration-300 flex flex-col
+                 shadow-[0_2px_15px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(212,165,116,0.15)] hover:border-[#d4a574]/25"
     >
       {/* Image */}
-      <div className="img-zoom relative h-32 sm:h-48 bg-[#0a0a0a]">
+      <div className="img-zoom relative h-40 sm:h-52 bg-[#0a0a0a]">
         <ImageWithFallback
           src={product.imageUrl}
           alt={product.name}
           fill
           className="object-cover"
         />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e]/80 via-transparent to-transparent pointer-events-none" />
+        {/* Floating price badge */}
+        <span className="absolute top-2 left-2 bg-[#0a0a0a]/80 backdrop-blur-sm text-[#d4a574] font-bold text-xs sm:text-sm px-2.5 py-1 rounded-lg border border-[#d4a574]/20">
+          {formatPrice(product.price)}
+        </span>
       </div>
 
       {/* Content */}
@@ -63,27 +70,23 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
           <h3 className="font-bold text-white text-sm sm:text-lg leading-tight mb-1">
             {product.name}
           </h3>
-          <p className="text-sm text-[#a0a0b0]">{product.weight}</p>
+          <p className="text-xs sm:text-sm text-[#a0a0b0]">{product.weight}</p>
         </div>
-
-        <span className="inline-block self-start bg-[#d4a574]/15 text-[#d4a574] font-bold text-sm px-3 py-1 rounded-lg">
-          {formatPrice(product.price)}
-        </span>
 
         {quantity === 0 ? (
           <button
             onClick={handleAdd}
-            className="bg-gradient-gold text-[#0a0a0a] font-bold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl
-                       w-full hover:shadow-[0_0_20px_rgba(212,165,116,0.4)] transition-all duration-300
-                       hover:scale-105 active:scale-95"
+            className="bg-gradient-gold text-[#0a0a0a] font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-full
+                       w-full hover:shadow-[0_0_20px_rgba(212,165,116,0.3)] transition-all duration-300
+                       hover:scale-[1.03] active:scale-95"
           >
             إضافة للسلة
           </button>
         ) : (
-          <div className="flex items-center justify-between bg-[#0a0a0a]/60 rounded-xl border border-[#d4a574]/20 overflow-hidden">
+          <div className="flex items-center justify-between bg-[#0a0a0a]/60 rounded-full border border-[#d4a574]/20 overflow-hidden">
             <button
               onClick={handleDecrease}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 text-[#d4a574] font-bold text-lg hover:bg-[#d4a574]/10 transition-colors"
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 text-[#d4a574] font-bold text-lg hover:bg-[#d4a574]/15 active:bg-[#d4a574]/25 transition-all duration-200"
             >
               −
             </button>
@@ -92,7 +95,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             </span>
             <button
               onClick={handleAdd}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 text-[#d4a574] font-bold text-lg hover:bg-[#d4a574]/10 transition-colors"
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 text-[#d4a574] font-bold text-lg hover:bg-[#d4a574]/15 active:bg-[#d4a574]/25 transition-all duration-200"
             >
               +
             </button>

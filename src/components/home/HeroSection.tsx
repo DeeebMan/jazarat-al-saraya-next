@@ -27,7 +27,7 @@ export function HeroSection() {
   return (
     <section
       id="home"
-      className="relative min-h-[80vh] flex items-center justify-center overflow-hidden"
+      className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center overflow-hidden"
     >
       {/* Background image */}
       <Image
@@ -41,6 +41,20 @@ export function HeroSection() {
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/60" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]" />
+
+      {/* Animated gold radial accent */}
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.15, 0.25, 0.15],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#d4a574]/10 blur-[120px] pointer-events-none"
+      />
 
       {/* Content */}
       <motion.div
@@ -66,9 +80,9 @@ export function HeroSection() {
         <motion.div variants={slideUpVariants}>
           <a
             href="#menu"
-            className="inline-block bg-gradient-gold text-[#0a0a0a] font-bold text-lg px-10 py-4 rounded-xl
-                       shadow-[0_0_30px_rgba(212,165,116,0.3)] hover:shadow-[0_0_50px_rgba(212,165,116,0.5)]
-                       transition-all duration-300 hover:scale-105 active:scale-95"
+            className="inline-block bg-gradient-gold text-[#0a0a0a] font-bold text-lg px-10 py-4 rounded-full
+                       shadow-[0_0_30px_rgba(212,165,116,0.3)] hover:shadow-[0_0_40px_rgba(212,165,116,0.45)]
+                       transition-all duration-300 hover:scale-[1.03] active:scale-95"
           >
             تصفح المنتجات
           </a>
