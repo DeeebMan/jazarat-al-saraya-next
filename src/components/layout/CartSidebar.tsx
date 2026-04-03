@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { formatPrice } from '@/lib/utils/formatPrice';
 import { sendWhatsAppOrder } from '@/lib/utils/buildWhatsAppUrl';
+import { addOrder } from '@/lib/firebase/firestore';
 import { showToast } from '@/components/ui/Toast';
 
 export function CartSidebar() {
@@ -24,7 +25,7 @@ export function CartSidebar() {
 
   const total = getTotal();
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (items.length === 0) {
       showToast('السلة فارغة!', 'error');
       return;
@@ -33,7 +34,27 @@ export function CartSidebar() {
       showToast('برجاء إدخال الاسم والعنوان ورقم التليفون', 'error');
       return;
     }
+
+    try {
+      await addOrder({
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        customerAddress: customerInfo.address,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          weight: item.product.weight,
+        })),
+        totalAmount: total,
+      });
+    } catch (error) {
+      console.error('Failed to save order:', error);
+    }
+
     sendWhatsAppOrder(items, customerInfo, total);
+    clearCart();
     showToast('تم إرسال الطلب عبر واتساب!');
   };
 

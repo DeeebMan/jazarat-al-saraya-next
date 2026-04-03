@@ -46,3 +46,39 @@ export interface CustomerInfo {
 
 export type ProductFormData = Omit<Product, 'id' | 'createdAt' | 'updatedAt'>;
 export type CategoryFormData = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>;
+
+// ============ Orders ============
+
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  weight: string;
+}
+
+export interface Order {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  items: OrderItem[];
+  totalAmount: number;
+  createdAt: Date;
+}
+
+export interface CustomerSummary {
+  customerName: string;
+  customerPhone: string;
+  totalOrders: number;
+  totalAmount: number;
+  lastOrderDate: Date;
+}
+
+export interface ProductOrderFrequency {
+  productId: string;
+  productName: string;
+  totalQuantity: number;
+  totalRevenue: number;
+  orderCount: number;
+}

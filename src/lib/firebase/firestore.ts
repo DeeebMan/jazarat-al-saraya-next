@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './config';
-import type { Product, Category, SiteSettings, ProductFormData, CategoryFormData } from '@/types';
+import type { Product, Category, SiteSettings, ProductFormData, CategoryFormData, Order } from '@/types';
 
 // ============ Categories ============
 
@@ -147,5 +147,27 @@ export async function updateSiteSettings(data: Partial<SiteSettings>): Promise<v
   await updateDoc(doc(db, 'settings', 'site'), {
     ...data,
     updatedAt: serverTimestamp(),
+  });
+}
+
+// ============ Orders ============
+
+export async function addOrder(data: Omit<Order, 'id' | 'createdAt'>): Promise<string> {
+  const docRef = await addDoc(collection(db, 'orders'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export function onOrdersSnapshot(callback: (orders: Order[]) => void): Unsubscribe {
+  const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const orders = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+    })) as Order[];
+    callback(orders);
   });
 }

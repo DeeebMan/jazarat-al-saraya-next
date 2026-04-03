@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   IoGridOutline,
   IoListOutline,
+  IoPeopleOutline,
   IoSettingsOutline,
   IoHomeOutline,
   IoLogOutOutline,
@@ -23,6 +24,7 @@ import { SHOP_NAME } from '@/lib/constants';
 const navLinks = [
   { href: '/admin/products', label: 'المنتجات', icon: IoGridOutline },
   { href: '/admin/categories', label: 'الفئات', icon: IoListOutline },
+  { href: '/admin/customers', label: 'العملاء', icon: IoPeopleOutline },
   { href: '/admin/settings', label: 'الإعدادات', icon: IoSettingsOutline },
 ];
 
